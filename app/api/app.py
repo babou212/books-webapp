@@ -1,4 +1,3 @@
-import json
 from flask import Flask, request, make_response
 from pymongo import MongoClient
 from bson.json_util import dumps
@@ -41,7 +40,6 @@ def create_new_book():
     }
 
     data = request.json
-    print(data)
 
     collection.insert_one(new_book)
     return make_response(dumps(collection.find_one({'_id': new_book["_id"] })), 201)
