@@ -39,8 +39,6 @@ def create_new_book():
     "categories" : data.get("categories"),
     }
 
-    data = request.json
-
     collection.insert_one(new_book)
     return make_response(dumps(collection.find_one({'_id': new_book["_id"] })), 201)
 
