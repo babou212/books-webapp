@@ -2,7 +2,6 @@ from flask import Flask, request, make_response
 from pymongo import MongoClient
 from bson.json_util import dumps
 from bson.objectid import ObjectId
-import random
 
 client = MongoClient()
 
@@ -11,20 +10,24 @@ collection = db.booksCollection
 
 app = Flask(__name__)
 
-API_VER_PATH="/api/v1/"
+API_VER_PATH_V1="/api/v1/"
 
-@app.route(f'{API_VER_PATH}/books/', methods=['GET'])
+@app.route(f'{API_VER_PATH_V1}/books/', methods=['GET'])
 def get_all_books():
     return make_response(dumps(collection.find({})), 200)
 
-@app.route(f'{API_VER_PATH}/books/<id>/', methods=['GET'])
+@app.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
     if ObjectId.is_valid(id):
         return make_response(dumps(collection.find_one({'_id': ObjectId(id) })), 200)        
     else:
         return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
-
-@app.route(f'{API_VER_PATH}/books/', methods=['POST'])
+    
+@app.route(f'{API_VER_PATH_V1}/books/search/<string:search>/', methods=['GET'])
+def get_book_by_search(search):
+    return make_response(dumps(collection.find({ "$text": { "$search": search } })), 200)
+         
+@app.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
 def create_new_book():
 
     data = request.json
