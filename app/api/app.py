@@ -23,9 +23,10 @@ def get_book_by_id(id):
     else:
         return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
     
-@app.route(f'{API_VER_PATH_V1}/books/search/<string:search>/', methods=['GET'])
-def get_book_by_search(search):
-    return make_response(dumps(collection.find({ "$text": { "$search": search } })), 200)
+@app.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
+def get_book_by_text_search():
+    query = request.args.get("query", "")
+    return make_response(dumps(collection.find({ "$text": { "$search": query } })), 200)
          
 @app.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
 def create_new_book():
