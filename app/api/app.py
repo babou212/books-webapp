@@ -1,6 +1,7 @@
 from flask import Flask, request, make_response
 from pymongo import MongoClient
 from bson.json_util import dumps
+from bson.objectid import ObjectId
 import random
 
 client = MongoClient()
@@ -16,9 +17,12 @@ API_VER_PATH="/api/v1/"
 def get_all_books():
     return make_response(dumps(collection.find({})), 200)
 
-@app.route(f'{API_VER_PATH}/books/<int:id>/', methods=['GET'])
+@app.route(f'{API_VER_PATH}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
-    return make_response(dumps(collection.find_one({'_id': id })), 200)
+    if ObjectId.is_valid(id):
+        return make_response(dumps(collection.find_one({'_id': ObjectId(id) })), 200)        
+    else:
+        return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
 
 @app.route(f'{API_VER_PATH}/books/', methods=['POST'])
 def create_new_book():
@@ -26,7 +30,7 @@ def create_new_book():
     data = request.json
 
     new_book = {
-    "_id" : random.randint(796, 100000),
+    "_id" : ObjectId(),
     "title" : data.get("title"),
     "isbn" : data.get("isbn"),
     "pageCount" : data.get("pageCount"),
