@@ -1,7 +1,13 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from pymongo import MongoClient
 from bson.json_util import dumps
 from bson.objectid import ObjectId
+import jwt
+import datetime
+from functools import wraps
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 client = MongoClient()
 
@@ -33,8 +39,8 @@ def create_new_book():
 
     data = request.json
 
-    if data.get("title") or data.get("isbn") or data.get("authors") or data.get("thumbnailUrl") or data.get("status") == "":
-        return make_response({"Error": "Title, isbn or authors are empty"}, 400) 
+    # if data.get("title") or data.get("isbn") or data.get("authors") or data.get("thumbnailUrl") or data.get("status") == "":
+    #     return make_response({"Error": "Title, isbn, status or authors are empty"}, 400) 
 
     new_book = {
     "_id" : ObjectId(),
@@ -69,6 +75,31 @@ def update_book(id):
 
     collection.update_one(query, new_values)
     return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
+
+@app.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['DELETE'])
+def delete_book(id):
+
+    if ObjectId.is_valid(id):
+        query = { "_id": ObjectId(id) }
+
+        collection.delete_one(query)
+        return make_response(dumps({"Deleted Resource": ObjectId(id)}), 200)
+    
+    query = { "_id": int(id) }
+
+    collection.update_one(query)
+    return make_response(dumps({"Deleted Resource": int(id)}), 200)
+
+@app.route(f'{API_VER_PATH_V1}/login/', methods=['POST'])
+def user_login():
+    data = request.json
+
+    token = jwt.encode({
+        "user": data.get("username"),
+        "exp": datetime.datetime.now() + datetime.timedelta(minutes=30),
+    }, SECRET_KEY, algorithm="HS256")
+
+    return make_response(jsonify({"token": token}), 201)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=105)

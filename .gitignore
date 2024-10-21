@@ -1,2 +1,3 @@
 .vscode/settings.json
 app/api/__pycache__/app.cpython-310.pyc
+app/api/.env
