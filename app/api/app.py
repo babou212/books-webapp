@@ -20,8 +20,8 @@ def get_all_books():
 def get_book_by_id(id):
     if ObjectId.is_valid(id):
         return make_response(dumps(collection.find_one({'_id': ObjectId(id) })), 200)        
-    else:
-        return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
+
+    return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
     
 @app.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
 def get_book_by_text_search():
@@ -32,6 +32,9 @@ def get_book_by_text_search():
 def create_new_book():
 
     data = request.json
+
+    if data.get("title") or data.get("isbn") or data.get("authors") or data.get("thumbnailUrl") or data.get("status") == "":
+        return make_response({"Error": "Title, isbn or authors are empty"}, 400) 
 
     new_book = {
     "_id" : ObjectId(),
@@ -49,6 +52,23 @@ def create_new_book():
 
     collection.insert_one(new_book)
     return make_response(dumps(collection.find_one({'_id': new_book["_id"] })), 201)
+
+@app.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['PUT'])
+def update_book(id):
+    data = request.json
+
+    if ObjectId.is_valid(id):
+        query = { "_id": ObjectId(id) }
+        new_values = { "$set": data }
+
+        collection.update_one(query, new_values)
+        return make_response(dumps(collection.find_one({'_id': ObjectId(id) })), 200)
+    
+    query = { "_id": int(id) }
+    new_values = { "$set": data }
+
+    collection.update_one(query, new_values)
+    return make_response(dumps(collection.find_one({'_id': int(id) })), 200)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=105)
