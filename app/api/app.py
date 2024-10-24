@@ -22,7 +22,6 @@ def verify(func):
     def jwt_wrapper(*args, **kwargs):
         jwt_token = None
         if "x-access-token" in request.headers:
-            print("why you work?")
             jwt_token = request.headers["x-access-token"]
         if not jwt_token:
             return make_response(jsonify({"Error": "Missing token"}), 401)
@@ -145,6 +144,35 @@ def create_new_user():
 
     userCollection.insert_one(new_user)
     return make_response(dumps(userCollection.find_one({'_id': new_user["_id"] })), 201)
+
+@app.route(f'{API_VER_PATH_V1}/books/<id>/reserve', methods=['PUT'])
+@verify 
+def reserve_book(id):
+
+    if ObjectId.is_valid(id):
+        query = { "_id": ObjectId(id) }
+    else:
+        query = { "_id": int(id) }
+
+    jwt_token = request.headers["x-access-token"]
+
+    if jwt_token:
+        jwt_data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+        book = bookCollection.find_one(query)
+
+        filter = {"username": jwt_data["user"]}
+
+        value = {"$push": {"books": book} }
+
+        userCollection.update_one(filter, value)
+        return make_response(dumps({"Reserved": book}), 201)
+    
+    return make_response({"Error": "Invalid request"}, 400)
+
+@app.route(f'{API_VER_PATH_V1}/users/', methods=['GET'])
+@verify
+def get_all_users():
+    return make_response(dumps(userCollection.find({})), 200)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=105)
