@@ -29,9 +29,16 @@ def get_all_users():
 
 @users_api.route(f'{API_VER_PATH_V1}/users/<id>', methods=['GET'])
 @verify_token
-@admin
 def get_user(id):
-    return make_response(dumps(userCollection.find_one({'_id': ObjectId(id)})), 200)
+    jwt_token = request.headers["x-access-token"]
+    data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+
+    user = userCollection.find_one({'_id': ObjectId(id)})
+
+    if data["user"] == user["username"]: 
+        return make_response(dumps(user), 200)
+    
+    return make_response(dumps({"Error": "Unauthorized"}), 401)
 
 @users_api.route(f'{API_VER_PATH_V1}/logout', methods=['GET'])
 @verify_token
@@ -68,7 +75,7 @@ def create_new_user():
 def user_login():
     data = request.json
 
-    if not data: 
+    if data: 
 
         user = userCollection.find_one({"username": data.get("username")})
 
