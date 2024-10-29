@@ -6,3 +6,4 @@ app/book/__pycache__/booksAPI.cpython-310.pyc
 app/decorators/__pycache__/admin.cpython-310.pyc
 app/decorators/__pycache__/verify.cpython-310.pyc
 app/user/__pycache__/usersAPI.cpython-310.pyc
+app/.env
