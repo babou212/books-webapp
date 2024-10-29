@@ -35,7 +35,7 @@ def get_paginated_books():
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
     if ObjectId.is_valid(id):
-        book = bookCollection.find_one({'_id': ObjectId(id) })
+        book = bookCollection.find_one({'_id': ObjectId(id)})
         if book:
             return make_response(dumps(book), 200)
         else:
@@ -46,7 +46,21 @@ def get_book_by_id(id):
         return make_response(dumps(book), 200)
     else:
         return make_response(dumps({"Error": "Book not found"}), 404)
-   
+    
+@books_api.route(f'{API_VER_PATH_V1}/books/category/', methods=['GET'])
+def get_book_by_category():
+    no_of_docs_each_page = request.args.get("mn", "")
+    current_page_number =  request.args.get("pn", "")
+    category = request.args.get("category", "")
+
+    if category and bookCollection.count_documents({"categories": category}) > 0:
+        if no_of_docs_each_page and current_page_number:
+            books = bookCollection.find({"categories": category}).skip(int(no_of_docs_each_page) * int(current_page_number)).limit(int(no_of_docs_each_page))
+            return make_response(dumps(books), 200)
+        return make_response({"Error": "Please provide page number and number per page"})
+    
+    return make_response({"Error": "Please provide a valid category"}, 400)
+
 @books_api.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
 def get_book_by_text_search():
     query = request.args.get("query", "")
