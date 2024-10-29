@@ -20,8 +20,17 @@ blackListCollection = db.blackListCollection
 books_api = Blueprint("books_api", __name__)
 
 @books_api.route(f'{API_VER_PATH_V1}/books/', methods=['GET'])
-def get_all_books():
-    return make_response(dumps(bookCollection.find({})), 200)
+def get_paginated_books():
+    no_of_docs_each_page = request.args.get("mn", "")
+    current_page_number =  request.args.get("pn", "")
+
+    if no_of_docs_each_page and current_page_number:
+
+        return make_response(dumps(bookCollection.find({})
+                                .skip(int(no_of_docs_each_page) * int(current_page_number))
+                                .limit(int(no_of_docs_each_page))), 200)
+    
+    return make_response({"Error": "Please provide page number and number per page"})
 
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):

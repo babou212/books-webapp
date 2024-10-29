@@ -25,7 +25,15 @@ users_api = Blueprint("users_api", __name__)
 @verify_token
 @admin
 def get_all_users():
-    return make_response(dumps(userCollection.find({})), 200)
+    no_of_docs_each_page = request.args.get("mn", "")
+    current_page_number =  request.args.get("pn", "")
+
+    if no_of_docs_each_page and current_page_number:
+        return make_response(dumps(userCollection.find({})
+                                .skip(int(no_of_docs_each_page) * int(current_page_number))
+                                .limit(int(no_of_docs_each_page))), 200)
+
+    return make_response({"Error": "Please provide page number and number per page"})
 
 @users_api.route(f'{API_VER_PATH_V1}/users/<id>', methods=['GET'])
 @verify_token
@@ -44,7 +52,7 @@ def get_user(id):
 @verify_token
 def logout():
     jwt_token = jwt.decode(request.headers["x-access-token"], SECRET_KEY, algorithms="HS256")
-    
+
     blackListCollection.insert_one({"token": jwt_token})
     return make_response(jsonify({"Message": "logout Successful"}), 200)
 
