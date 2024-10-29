@@ -1,3 +1,8 @@
 .vscode/settings.json
 app/api/__pycache__/app.cpython-310.pyc
 app/api/.env
+app/__pycache__/app.cpython-310.pyc
+app/book/__pycache__/booksAPI.cpython-310.pyc
+app/decorators/__pycache__/admin.cpython-310.pyc
+app/decorators/__pycache__/verify.cpython-310.pyc
+app/user/__pycache__/usersAPI.cpython-310.pyc
