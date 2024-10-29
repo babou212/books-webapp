@@ -25,7 +25,6 @@ def get_all_books():
 
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
-
     if ObjectId.is_valid(id):
         book = bookCollection.find_one({'_id': ObjectId(id) })
         if book:
@@ -51,7 +50,6 @@ def get_book_by_text_search():
 @books_api.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
 @verify_token  
 def create_new_book():
-
     data = request.json
 
     if data:
@@ -102,7 +100,6 @@ def update_book(id):
 @verify_token
 @admin 
 def delete_book(id):
-
     if ObjectId.is_valid(id):
         query = { "_id": ObjectId(id) }
 
@@ -117,7 +114,6 @@ def delete_book(id):
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/reserve', methods=['PUT'])
 @verify_token
 def reserve_book(id):
-
     if ObjectId.is_valid(id):
         query = { "_id": ObjectId(id) }
     else:
