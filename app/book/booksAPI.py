@@ -19,18 +19,17 @@ blackListCollection = db.blackListCollection
 
 books_api = Blueprint("books_api", __name__)
 
-@books_api.route(f'{API_VER_PATH_V1}/books/', methods=['GET'])
-def get_paginated_books():
+@books_api.route(f'{API_VER_PATH_V1}/books', methods=['GET'])
+def get_books():
     no_of_docs_each_page = request.args.get("mn", "")
     current_page_number =  request.args.get("pn", "")
 
     if no_of_docs_each_page and current_page_number:
-
         return make_response(dumps(bookCollection.find({})
-                                .skip(int(no_of_docs_each_page) * int(current_page_number))
+                                .skip(int(no_of_docs_each_page) * (int(current_page_number)-1))
                                 .limit(int(no_of_docs_each_page))), 200)
     
-    return make_response({"Error": "Please provide page number and number per page"})
+    return make_response(dumps(bookCollection.find({})), 200)
 
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
@@ -55,7 +54,8 @@ def get_book_by_category():
 
     if category and bookCollection.count_documents({"categories": category}) > 0:
         if no_of_docs_each_page and current_page_number:
-            books = bookCollection.find({"categories": category}).skip(int(no_of_docs_each_page) * int(current_page_number)).limit(int(no_of_docs_each_page))
+            books = bookCollection.find({"categories": category})\
+            .skip(int(no_of_docs_each_page) * (int(current_page_number)-1)).limit(int(no_of_docs_each_page))
             return make_response(dumps(books), 200)
         return make_response({"Error": "Please provide page number and number per page"})
     
@@ -63,15 +63,20 @@ def get_book_by_category():
 
 @books_api.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
 def get_book_by_text_search():
+    no_of_docs_each_page = request.args.get("mn", "")
+    current_page_number =  request.args.get("pn", "")
     query = request.args.get("query", "")
 
-    if query:
-        return make_response(dumps(bookCollection.find({ "$text": { "$search": query } })), 200)
+    if query and no_of_docs_each_page and current_page_number:
+        books = bookCollection.find({ "$text": { "$search": query } })\
+        .skip(int(no_of_docs_each_page) * (int(current_page_number)-1)).limit(int(no_of_docs_each_page))
+        return make_response(dumps(books), 200)
     
     return make_response(dumps({"Error": "Search Query not provided"}), 400)
     
 @books_api.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
-@verify_token  
+@verify_token
+@admin  
 def create_new_book():
     data = request.json
 
@@ -133,26 +138,3 @@ def delete_book(id):
 
     bookCollection.delete_one(query)
     return make_response(dumps({"Deleted Resource": int(id)}), 200)
-        
-@books_api.route(f'{API_VER_PATH_V1}/books/<id>/reserve', methods=['PUT'])
-@verify_token
-def reserve_book(id):
-    if ObjectId.is_valid(id):
-        query = { "_id": ObjectId(id) }
-    else:
-        query = { "_id": int(id) }
-
-    jwt_token = request.headers["x-access-token"]
-
-    if jwt_token:
-        jwt_data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
-        book = bookCollection.find_one(query)
-
-        filter = {"username": jwt_data["user"]}
-
-        value = {"$push": {"books": book} }
-
-        userCollection.update_one(filter, value)
-        return make_response(dumps({"Reserved": book}), 201)
-    
-    return make_response({"Error": "Invalid request"}, 400)

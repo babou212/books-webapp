@@ -21,7 +21,7 @@ blackListCollection = db.blackListCollection
 
 users_api = Blueprint("users_api", __name__)
 
-@users_api.route(f'{API_VER_PATH_V1}/users/', methods=['GET'])
+@users_api.route(f'{API_VER_PATH_V1}/users', methods=['GET'])
 @verify_token
 @admin
 def get_all_users():
@@ -30,10 +30,10 @@ def get_all_users():
 
     if no_of_docs_each_page and current_page_number:
         return make_response(dumps(userCollection.find({})
-                                .skip(int(no_of_docs_each_page) * int(current_page_number))
+                                .skip(int(no_of_docs_each_page) * (int(current_page_number)-1))
                                 .limit(int(no_of_docs_each_page))), 200)
 
-    return make_response({"Error": "Please provide page number and number per page"})
+    return make_response(dumps(userCollection.find({})))
 
 @users_api.route(f'{API_VER_PATH_V1}/users/<id>', methods=['GET'])
 @verify_token
@@ -86,7 +86,7 @@ def user_login():
         user = userCollection.find_one({"username": data.get("username")})
 
         if not user:
-            return make_response({"Error": "Non valid user"}, 401)
+            return make_response({"Error": "Non valid username"}, 401)
             
         if bcrypt.checkpw(bytes(data.get("password"), "UTF-8"), user["password"]):
             token = jwt.encode({
@@ -95,6 +95,29 @@ def user_login():
                 "role": user["role"]
             }, SECRET_KEY, algorithm="HS256")
 
-            return make_response(jsonify({"token": token}), 201)
+            return make_response(jsonify({"token": token}), 200)
             
-    return make_response(dumps({"Error": "JSON Object not provided"}), 400)
+    return make_response(dumps({"Error": "Username or Password incorrect, try again"}), 401)
+
+@users_api.route(f'{API_VER_PATH_V1}/users/reserve/<id>', methods=['PUT'])
+@verify_token
+def reserve_book(id):
+    if ObjectId.is_valid(id):
+        query = { "_id": ObjectId(id) }
+    else:
+        query = { "_id": int(id) }
+
+    jwt_token = request.headers["x-access-token"]
+
+    if jwt_token:
+        jwt_data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+        book = bookCollection.find_one(query)
+
+        filter = {"username": jwt_data["user"]}
+
+        value = {"$push": {"books": book} }
+
+        userCollection.update_one(filter, value)
+        return make_response(dumps({"Reserved": book}), 201)
+    
+    return make_response({"Error": "Invalid request"}, 400)
