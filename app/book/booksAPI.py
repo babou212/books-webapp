@@ -113,6 +113,12 @@ def update_book(id):
         query = {"_id": ObjectId(id)}
         new_values = {"$set": data}
 
+        activity = {
+        "Action": "Book Updated",
+        "Book_id": ObjectId(id)
+        }
+
+        activityCollection.insert_one(activity)
         bookCollection.update_one(query, new_values)
         return make_response(dumps(bookCollection.find_one({'_id': ObjectId(id)})), 200)
             
