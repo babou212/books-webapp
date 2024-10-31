@@ -63,6 +63,11 @@ def create_new_user():
     data = request.json
 
     if data:
+        user = userCollection.find_one({"username": data.get("username")})
+
+        if user:
+            return make_response(dumps({"Error": "Username already taken"}), 401)
+
         new_user = {
         "_id" : ObjectId(),
         "username" : data.get("username"),
@@ -74,7 +79,7 @@ def create_new_user():
         new_user["password"] = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
 
         userCollection.insert_one(new_user)
-        return make_response(dumps(userCollection.find_one({'_id': new_user["_id"] })), 201)
+        return make_response(dumps(userCollection.find_one({'_id': new_user["_id"]})), 201)
     
     return make_response(dumps({"Error": "JSON Object not provided"}), 400)
 
@@ -103,9 +108,9 @@ def user_login():
 @verify_token
 def reserve_book(id):
     if ObjectId.is_valid(id):
-        query = { "_id": ObjectId(id) }
+        query = {"_id": ObjectId(id)}
     else:
-        query = { "_id": int(id) }
+        query = {"_id": int(id)}
 
     jwt_token = request.headers["x-access-token"]
 
@@ -115,7 +120,7 @@ def reserve_book(id):
 
         filter = {"username": jwt_data["user"]}
 
-        value = {"$push": {"books": book} }
+        value = {"$push": {"books": book}}
 
         userCollection.update_one(filter, value)
         return make_response(dumps({"Reserved": book}), 201)
@@ -129,13 +134,28 @@ def unreserve_book(id):
     user_id = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
 
     if ObjectId.is_valid(id):
-        delete_query = {"$pull": { "books": {"_id": ObjectId(id)}}}
+        delete_query = {"$pull": {"books": {"_id": ObjectId(id)}}}
         deleted_obj = ObjectId(id)
     else:
-        delete_query = {"$pull": { "books": {"_id": int(id)}}}
+        delete_query = {"$pull": {"books": {"_id": int(id)}}}
         deleted_obj = int(id)
 
     query = {"username": user_id["user"]}
 
     userCollection.update_one(query, delete_query)
     return make_response(dumps({"Unreserved": deleted_obj}), 200)
+
+@users_api.route(f'{API_VER_PATH_V1}/users/<id>/', methods=['DELETE'])
+@verify_token
+@admin 
+def delete_user(id):
+    if ObjectId.is_valid(id):
+        query = {"_id": ObjectId(id)}
+
+        userCollection.delete_one(query)
+        return make_response(dumps({"Deleted user": ObjectId(id)}), 200)
+    
+    query = {"_id": int(id)}
+
+    userCollection.delete_one(query)
+    return make_response(dumps({"Deleted User": int(id)}), 200)

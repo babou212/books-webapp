@@ -57,7 +57,7 @@ def get_book_by_category():
             books = bookCollection.find({"categories": category})\
             .skip(int(no_of_docs_each_page) * (int(current_page_number)-1)).limit(int(no_of_docs_each_page))
             return make_response(dumps(books), 200)
-        return make_response({"Error": "Please provide page number and number per page"})
+        return make_response(dumps(bookCollection.find({"categories": category})))
     
     return make_response({"Error": "Please provide a valid category"}, 400)
 
@@ -82,7 +82,7 @@ def create_new_book():
 
     if data:
         if not data.get("title") or not data.get("isbn") or not data.get("thumbnailUrl"):
-            return make_response({"Error": "Title, isbn, status or authors are empty"}, 400) 
+            return make_response({"Error": "Title, isbn or thumbnail empty"}, 400) 
 
         new_book = {
         "_id" : ObjectId(),
@@ -99,28 +99,29 @@ def create_new_book():
         }
 
         bookCollection.insert_one(new_book)
-        return make_response(dumps(bookCollection.find_one({'_id': new_book["_id"] })), 201)
+        return make_response(dumps(bookCollection.find_one({'_id': new_book["_id"]})), 201)
     
     return make_response(dumps({"Error": "JSON Object not provided"}), 400)
     
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['PUT'])
 @verify_token
+@admin
 def update_book(id):
     data = request.json
 
     if data:
         if ObjectId.is_valid(id):
-            query = { "_id": ObjectId(id) }
-            new_values = { "$set": data }
+            query = {"_id": ObjectId(id)}
+            new_values = {"$set": data}
 
             bookCollection.update_one(query, new_values)
-            return make_response(dumps(bookCollection.find_one({'_id': ObjectId(id) })), 200)
+            return make_response(dumps(bookCollection.find_one({'_id': ObjectId(id)})), 200)
         
-        query = { "_id": int(id) }
-        new_values = { "$set": data }
+        query = {"_id": int(id)}
+        new_values = {"$set": data}
 
         bookCollection.update_one(query, new_values)
-        return make_response(dumps(bookCollection.find_one({'_id': int(id) })), 200)
+        return make_response(dumps(bookCollection.find_one({'_id': int(id)})), 200)
     
     return make_response(dumps({"Error": "JSON Object not provided"}), 400)
     
@@ -129,12 +130,12 @@ def update_book(id):
 @admin 
 def delete_book(id):
     if ObjectId.is_valid(id):
-        query = { "_id": ObjectId(id) }
+        query = {"_id": ObjectId(id)}
 
         bookCollection.delete_one(query)
         return make_response(dumps({"Deleted Resource": ObjectId(id)}), 200)
     
-    query = { "_id": int(id) }
+    query = {"_id": int(id)}
 
     bookCollection.delete_one(query)
     return make_response(dumps({"Deleted Resource": int(id)}), 200)
