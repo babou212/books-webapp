@@ -65,6 +65,13 @@ def get_book_by_text_search():
         return make_response(dumps(books), 200)
     
     return make_response(dumps({"Error": "Search Query not provided"}), 400)
+
+@books_api.route(f'{API_VER_PATH_V1}/books/results/price/', methods=['GET'])
+def get_book_by_price():
+    query = request.args.get("p", "")
+
+    books = bookCollection.find({"price": {"$lte": int(query)}})
+    return make_response(dumps(books), 200)
     
 @books_api.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
 @verify_token
