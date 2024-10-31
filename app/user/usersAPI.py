@@ -48,14 +48,6 @@ def get_user(id):
     
     return make_response(dumps({"Error": "Unauthorized"}), 401)
 
-@users_api.route(f'{API_VER_PATH_V1}/logout', methods=['GET'])
-@verify_token
-def logout():
-    jwt_token = request.headers["x-access-token"]
-
-    blackListCollection.insert_one({"token": jwt_token})
-    return make_response(jsonify({"Message": "logout Successful"}), 200)
-
 @users_api.route(f'{API_VER_PATH_V1}/users/', methods=['POST'])
 @verify_token
 @admin
@@ -83,6 +75,15 @@ def create_new_user():
     
     return make_response(dumps({"Error": "JSON Object not provided"}), 400)
 
+@users_api.route(f'{API_VER_PATH_V1}/users/<id>/', methods=['DELETE'])
+@verify_token
+@admin 
+def delete_user(id):
+    query = {"_id": ObjectId(id)}
+
+    userCollection.delete_one(query)
+    return make_response(dumps({"Deleted user": ObjectId(id)}), 200)
+
 @users_api.route(f'{API_VER_PATH_V1}/login/', methods=['POST'])
 def user_login():
     data = request.json
@@ -104,18 +105,23 @@ def user_login():
             
     return make_response(dumps({"Error": "Username or Password incorrect, try again"}), 401)
 
+@users_api.route(f'{API_VER_PATH_V1}/logout', methods=['GET'])
+@verify_token
+def logout():
+    jwt_token = request.headers["x-access-token"]
+
+    blackListCollection.insert_one({"token": jwt_token})
+    return make_response(jsonify({"Message": "logout Successful"}), 200)
+
 @users_api.route(f'{API_VER_PATH_V1}/users/reserve/<id>', methods=['PUT'])
 @verify_token
 def reserve_book(id):
-    if ObjectId.is_valid(id):
-        query = {"_id": ObjectId(id)}
-    else:
-        query = {"_id": int(id)}
-
+    
     jwt_token = request.headers["x-access-token"]
 
     if jwt_token:
         jwt_data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+        query = {"_id": ObjectId(id)}
         book = bookCollection.find_one(query)
 
         filter = {"username": jwt_data["user"]}
@@ -133,29 +139,10 @@ def unreserve_book(id):
     jwt_token = request.headers["x-access-token"]
     user_id = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
 
-    if ObjectId.is_valid(id):
-        delete_query = {"$pull": {"books": {"_id": ObjectId(id)}}}
-        deleted_obj = ObjectId(id)
-    else:
-        delete_query = {"$pull": {"books": {"_id": int(id)}}}
-        deleted_obj = int(id)
+    delete_query = {"$pull": {"books": {"_id": ObjectId(id)}}}
+    deleted_obj = ObjectId(id)
 
     query = {"username": user_id["user"]}
 
     userCollection.update_one(query, delete_query)
     return make_response(dumps({"Unreserved": deleted_obj}), 200)
-
-@users_api.route(f'{API_VER_PATH_V1}/users/<id>/', methods=['DELETE'])
-@verify_token
-@admin 
-def delete_user(id):
-    if ObjectId.is_valid(id):
-        query = {"_id": ObjectId(id)}
-
-        userCollection.delete_one(query)
-        return make_response(dumps({"Deleted user": ObjectId(id)}), 200)
-    
-    query = {"_id": int(id)}
-
-    userCollection.delete_one(query)
-    return make_response(dumps({"Deleted User": int(id)}), 200)

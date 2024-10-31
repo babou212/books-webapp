@@ -32,14 +32,7 @@ def get_books():
 
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['GET'])
 def get_book_by_id(id):
-    if ObjectId.is_valid(id):
-        book = bookCollection.find_one({'_id': ObjectId(id)})
-        if book:
-            return make_response(dumps(book), 200)
-        else:
-            return make_response(dumps({"Error": "Book not found"}), 404)
-
-    book = bookCollection.find_one({'_id': int(id)})
+    book = bookCollection.find_one({'_id': ObjectId(id)})
     if book:
         return make_response(dumps(book), 200)
     else:
@@ -90,9 +83,9 @@ def create_new_book():
         "pageCount" : data.get("pageCount"),
         "publishedDate" : data.get("publishedDate"),
         "thumbnailUrl" : data.get("thumbnailUrl"),
-        "longDescription" : data.get("longDescription"),
-        "shortDescription" : data.get("shortDescription"),
-        "status" : data.get("status"),
+        "description" : data.get("description"),
+        "reserved" : False,
+        "price" : data.get("price"),
         "authors" : data.get("authors"),
         "categories" : data.get("categories"),
         }
@@ -109,32 +102,19 @@ def update_book(id):
     data = request.json
 
     if data:
-        if ObjectId.is_valid(id):
-            query = {"_id": ObjectId(id)}
-            new_values = {"$set": data}
-
-            bookCollection.update_one(query, new_values)
-            return make_response(dumps(bookCollection.find_one({'_id': ObjectId(id)})), 200)
-        
-        query = {"_id": int(id)}
+        query = {"_id": ObjectId(id)}
         new_values = {"$set": data}
 
         bookCollection.update_one(query, new_values)
-        return make_response(dumps(bookCollection.find_one({'_id': int(id)})), 200)
-    
+        return make_response(dumps(bookCollection.find_one({'_id': ObjectId(id)})), 200)
+            
     return make_response(dumps({"Error": "JSON Object not provided"}), 400)
     
 @books_api.route(f'{API_VER_PATH_V1}/books/<id>/', methods=['DELETE'])
 @verify_token
 @admin 
 def delete_book(id):
-    if ObjectId.is_valid(id):
-        query = {"_id": ObjectId(id)}
-
-        bookCollection.delete_one(query)
-        return make_response(dumps({"Deleted Resource": ObjectId(id)}), 200)
-    
-    query = {"_id": int(id)}
+    query = {"_id": ObjectId(id)}
 
     bookCollection.delete_one(query)
-    return make_response(dumps({"Deleted Resource": int(id)}), 200)
+    return make_response(dumps({"Deleted Resource": ObjectId(id)}), 200)
