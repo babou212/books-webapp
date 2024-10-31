@@ -1,7 +1,6 @@
-from flask import request, make_response, Blueprint
+from flask import make_response, Blueprint
 from pymongo import MongoClient
 from bson.json_util import dumps
-from bson.objectid import ObjectId
 import os
 from decorators.admin import admin
 from decorators.verify import verify_token
@@ -31,3 +30,26 @@ def get_all_user_actions():
 def get_user_logins():    
     return make_response(dumps(activityCollection.find({"Action": "User Login"})), 200)
 
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/login/fail', methods=['GET'])
+@verify_token
+@admin 
+def get_failed_user_logins():    
+    return make_response(dumps(activityCollection.find({"Status": "Failure"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/login/success', methods=['GET'])
+@verify_token
+@admin 
+def get_successful_user_logins():    
+    return make_response(dumps(activityCollection.find({"Status": "Successful"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/reserved', methods=['GET'])
+@verify_token
+@admin 
+def get_books_reserved_activity():    
+    return make_response(dumps(activityCollection.find({"Action": "Book Reserved"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/unreserved', methods=['GET'])
+@verify_token
+@admin 
+def get_books_unreserved_activity():    
+    return make_response(dumps(activityCollection.find({"Action": "Book Unreserved"})), 200)
