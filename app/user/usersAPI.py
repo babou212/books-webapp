@@ -25,7 +25,7 @@ users_api = Blueprint("users_api", __name__)
 @verify_token
 @admin
 def get_all_users():
-    no_of_docs_each_page = request.args.get("mn", "")
+    no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
 
     if no_of_docs_each_page and current_page_number:

@@ -2,7 +2,6 @@ from flask import request, make_response, Blueprint
 from pymongo import MongoClient
 from bson.json_util import dumps
 from bson.objectid import ObjectId
-import jwt
 import os
 from decorators.admin import admin
 from decorators.verify import verify_token
@@ -21,7 +20,7 @@ books_api = Blueprint("books_api", __name__)
 
 @books_api.route(f'{API_VER_PATH_V1}/books', methods=['GET'])
 def get_books():
-    no_of_docs_each_page = request.args.get("mn", "")
+    no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
 
     if no_of_docs_each_page and current_page_number:
@@ -48,7 +47,7 @@ def get_book_by_id(id):
     
 @books_api.route(f'{API_VER_PATH_V1}/books/category/', methods=['GET'])
 def get_book_by_category():
-    no_of_docs_each_page = request.args.get("mn", "")
+    no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
     category = request.args.get("category", "")
 
@@ -63,7 +62,7 @@ def get_book_by_category():
 
 @books_api.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
 def get_book_by_text_search():
-    no_of_docs_each_page = request.args.get("mn", "")
+    no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
     query = request.args.get("query", "")
 
