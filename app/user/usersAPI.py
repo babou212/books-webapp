@@ -51,7 +51,7 @@ def get_user(id):
 @users_api.route(f'{API_VER_PATH_V1}/logout', methods=['GET'])
 @verify_token
 def logout():
-    jwt_token = jwt.decode(request.headers["x-access-token"], SECRET_KEY, algorithms="HS256")
+    jwt_token = request.headers["x-access-token"]
 
     blackListCollection.insert_one({"token": jwt_token})
     return make_response(jsonify({"Message": "logout Successful"}), 200)
@@ -121,3 +121,21 @@ def reserve_book(id):
         return make_response(dumps({"Reserved": book}), 201)
     
     return make_response({"Error": "Invalid request"}, 400)
+
+@users_api.route(f'{API_VER_PATH_V1}/users/reserve/<id>', methods=['DELETE'])
+@verify_token
+def unreserve_book(id):
+    jwt_token = request.headers["x-access-token"]
+    user_id = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+
+    if ObjectId.is_valid(id):
+        delete_query = {"$pull": { "books": {"_id": ObjectId(id)}}}
+        deleted_obj = ObjectId(id)
+    else:
+        delete_query = {"$pull": { "books": {"_id": int(id)}}}
+        deleted_obj = int(id)
+
+    query = {"username": user_id["user"]}
+
+    userCollection.update_one(query, delete_query)
+    return make_response(dumps({"Unreserved": deleted_obj}), 200)
