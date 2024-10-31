@@ -124,12 +124,16 @@ def reserve_book(id):
         query = {"_id": ObjectId(id)}
         book = bookCollection.find_one(query)
 
-        filter = {"username": jwt_data["user"]}
+        if book["reserved"] == False:
+            bookCollection.update_one(query, {"$set": {"reserved": True}})
+            filter = {"username": jwt_data["user"]}
 
-        value = {"$push": {"books": book}}
+            value = {"$push": {"books": book}}
 
-        userCollection.update_one(filter, value)
-        return make_response(dumps({"Reserved": book}), 201)
+            userCollection.update_one(filter, value)
+            return make_response(dumps({"Reserved": book}), 201)
+        
+        return make_response(dumps({"Error": "Book has already been reserved"}), 400)
     
     return make_response({"Error": "Invalid request"}, 400)
 
@@ -141,6 +145,8 @@ def unreserve_book(id):
 
     delete_query = {"$pull": {"books": {"_id": ObjectId(id)}}}
     deleted_obj = ObjectId(id)
+
+    bookCollection.update_one({"_id": ObjectId(id)}, {"$set": {"reserved": False}})
 
     query = {"username": user_id["user"]}
 
