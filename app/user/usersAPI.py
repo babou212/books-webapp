@@ -18,6 +18,7 @@ db = client.books
 bookCollection = db.booksCollection
 userCollection = db.userCollection
 blackListCollection = db.blackListCollection
+activityCollection = db.activityCollection
 
 users_api = Blueprint("users_api", __name__)
 
@@ -70,6 +71,13 @@ def create_new_user():
 
         new_user["password"] = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
 
+        activity = {
+            "Action": "New User Created",
+            "user": new_user["username"],
+            "id": new_user["_id"]
+        }
+
+        activityCollection.insert_one(activity)
         userCollection.insert_one(new_user)
         return make_response(dumps(userCollection.find_one({'_id': new_user["_id"]})), 201)
     
@@ -81,6 +89,12 @@ def create_new_user():
 def delete_user(id):
     query = {"_id": ObjectId(id)}
 
+    activity = {
+            "Action": "User Deleted",
+            "_id": ObjectId(id)
+        }
+
+    activityCollection.insert_one(activity)
     userCollection.delete_one(query)
     return make_response(dumps({"Deleted user": ObjectId(id)}), 200)
 
@@ -101,8 +115,22 @@ def user_login():
                 "role": user["role"]
             }, SECRET_KEY, algorithm="HS256")
 
+            activity = {
+            "Action": "User Login",
+            "user": data.get("username"),
+            "Status": "Successful"
+            }
+
+            activityCollection.insert_one(activity)
             return make_response(jsonify({"token": token}), 200)
-            
+        
+    activity = {
+        "Action": "User Login",
+        "user": data.get("username"),
+        "Status": "Failure"
+        }
+
+    activityCollection.insert_one(activity)        
     return make_response(dumps({"Error": "Username or Password incorrect, try again"}), 401)
 
 @users_api.route(f'{API_VER_PATH_V1}/logout', methods=['GET'])
@@ -130,6 +158,13 @@ def reserve_book(id):
 
             value = {"$push": {"books": book}}
 
+            activity = {
+            "Action": "Book Reserved",
+            "user": jwt_data["user"],
+            "Book_id": book["_id"] 
+            }
+
+            activityCollection.insert_one(activity)
             userCollection.update_one(filter, value)
             return make_response(dumps({"Reserved": book}), 201)
         
@@ -150,5 +185,12 @@ def unreserve_book(id):
 
     query = {"username": user_id["user"]}
 
+    activity = {
+            "Action": "Book Unreserved",
+            "user": user_id["user"],
+            "Book_id": ObjectId(id)
+            }
+
+    activityCollection.insert_one(activity)
     userCollection.update_one(query, delete_query)
     return make_response(dumps({"Unreserved": deleted_obj}), 200)
