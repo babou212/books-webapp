@@ -144,7 +144,6 @@ def logout():
 @users_api.route(f'{API_VER_PATH_V1}/users/reserve/<id>', methods=['PUT'])
 @verify_token
 def reserve_book(id):
-    
     jwt_token = request.headers["x-access-token"]
 
     if jwt_token:

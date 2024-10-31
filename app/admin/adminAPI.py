@@ -53,3 +53,9 @@ def get_books_reserved_activity():
 @admin 
 def get_books_unreserved_activity():    
     return make_response(dumps(activityCollection.find({"Action": "Book Unreserved"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/book-deleted', methods=['GET'])
+@verify_token
+@admin 
+def get_book_deleted_activity():    
+    return make_response(dumps(activityCollection.find({"Action": "Book Deleted"})), 200)

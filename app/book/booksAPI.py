@@ -15,6 +15,7 @@ db = client.books
 bookCollection = db.booksCollection
 userCollection = db.userCollection
 blackListCollection = db.blackListCollection
+activityCollection = db.activityCollection
 
 books_api = Blueprint("books_api", __name__)
 
@@ -123,5 +124,11 @@ def update_book(id):
 def delete_book(id):
     query = {"_id": ObjectId(id)}
 
+    activity = {
+        "Action": "Book Deleted",
+        "Book_id": ObjectId(id)
+        }
+
+    activityCollection.insert_one(activity)
     bookCollection.delete_one(query)
     return make_response(dumps({"Deleted Resource": ObjectId(id)}), 200)
