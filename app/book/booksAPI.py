@@ -39,7 +39,7 @@ def get_book_by_id(id):
     else:
         return make_response(dumps({"Error": "Book not found"}), 404)
     
-@books_api.route(f'{API_VER_PATH_V1}/books/category/', methods=['GET'])
+@books_api.route(f'{API_VER_PATH_V1}/books/category', methods=['GET'])
 def get_book_by_category():
     no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
@@ -54,7 +54,7 @@ def get_book_by_category():
     
     return make_response({"Error": "Please provide a valid category"}, 400)
 
-@books_api.route(f'{API_VER_PATH_V1}/books/results/', methods=['GET'])
+@books_api.route(f'{API_VER_PATH_V1}/books/results', methods=['GET'])
 def get_book_by_text_search():
     no_of_docs_each_page = request.args.get("ps", "")
     current_page_number =  request.args.get("pn", "")
@@ -65,9 +65,9 @@ def get_book_by_text_search():
         .skip(int(no_of_docs_each_page) * (int(current_page_number)-1)).limit(int(no_of_docs_each_page))
         return make_response(dumps(books), 200)
     
-    return make_response(dumps({"Error": "Search Query not provided"}), 400)
+    return make_response(dumps(bookCollection.find({ "$text": { "$search": query } })), 200)
 
-@books_api.route(f'{API_VER_PATH_V1}/books/results/price/', methods=['GET'])
+@books_api.route(f'{API_VER_PATH_V1}/books/results/price', methods=['GET'])
 def get_book_by_price():
     query = request.args.get("p", "")
 
@@ -98,6 +98,13 @@ def create_new_book():
         "categories" : data.get("categories"),
         }
 
+        activity = {
+        "Action": "Book Created",
+        "Title": new_book["title"],
+        "Book_id": new_book["_id"]
+        }
+
+        activityCollection.insert_one(activity)
         bookCollection.insert_one(new_book)
         return make_response(dumps(bookCollection.find_one({'_id': new_book["_id"]})), 201)
     

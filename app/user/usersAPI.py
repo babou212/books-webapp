@@ -50,8 +50,6 @@ def get_user(id):
     return make_response(dumps({"Error": "Unauthorized"}), 401)
 
 @users_api.route(f'{API_VER_PATH_V1}/users/', methods=['POST'])
-@verify_token
-@admin
 def create_new_user():
     data = request.json
 

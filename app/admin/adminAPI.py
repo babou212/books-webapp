@@ -65,3 +65,9 @@ def get_book_deleted_activity():
 @admin 
 def get_book_updated_activity():    
     return make_response(dumps(activityCollection.find({"Action": "Book Updated"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/book-created', methods=['GET'])
+@verify_token
+@admin 
+def get_book_created_activity():    
+    return make_response(dumps(activityCollection.find({"Action": "Book Created"})), 200)
