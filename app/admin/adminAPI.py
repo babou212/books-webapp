@@ -36,6 +36,18 @@ def get_user_logins():
 def get_failed_user_logins():    
     return make_response(dumps(activityCollection.find({"Status": "Failure"})), 200)
 
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/user-deleted', methods=['GET'])
+@verify_token
+@admin 
+def get_user_deleted():    
+    return make_response(dumps(activityCollection.find({"Action": "User Deleted"})), 200)
+
+@admin_api.route(f'{API_VER_PATH_V1}/user-actions/user-created', methods=['GET'])
+@verify_token
+@admin 
+def get_user_created():    
+    return make_response(dumps(activityCollection.find({"Action": "New User Created"})), 200)
+
 @admin_api.route(f'{API_VER_PATH_V1}/user-actions/login/success', methods=['GET'])
 @verify_token
 @admin 

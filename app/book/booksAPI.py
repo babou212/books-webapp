@@ -73,6 +73,19 @@ def get_book_by_price():
 
     books = bookCollection.find({"price": {"$lte": int(query)}})
     return make_response(dumps(books), 200)
+
+@books_api.route(f'{API_VER_PATH_V1}/books/available', methods=['GET'])
+def get_all_available_books():
+    no_of_docs_each_page = request.args.get("ps", "")
+    current_page_number =  request.args.get("pn", "")
+    
+    if no_of_docs_each_page and current_page_number:
+            books = bookCollection.find({"reserved": False})\
+            .skip(int(no_of_docs_each_page) * (int(current_page_number)-1)).limit(int(no_of_docs_each_page))
+            return make_response(dumps(books), 200)
+    
+    books = bookCollection.find({"reserved": False})
+    return make_response(dumps(books), 200)
     
 @books_api.route(f'{API_VER_PATH_V1}/books/', methods=['POST'])
 @verify_token
