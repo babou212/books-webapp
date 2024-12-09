@@ -13,7 +13,8 @@ def create_admin_user():
         "username" : "admin",
         "password" : b"cV2CLWD/sliA/dodN+w=",
         "role" : "admin",
-        "books" : [],
+        "amountOwed": 0,
+        "books" : []
         }
         
     new_user["password"] = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
@@ -26,7 +27,8 @@ def create_user():
         "username" : "john_doe",
         "password" : b"5+F0gPlRNS5wxo2o7zQ=",
         "role" : "user",
-        "books" : [],
+        "amountOwed": 0,
+        "books" : []
         }
         
     new_user["password"] = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())

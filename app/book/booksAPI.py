@@ -19,6 +19,10 @@ activityCollection = db.activityCollection
 
 books_api = Blueprint("books_api", __name__)
 
+@books_api.route(f'{API_VER_PATH_V1}/books/count', methods=['GET'])
+def get_books_count():
+    return make_response(dumps(bookCollection.count_documents({})), 200)
+
 @books_api.route(f'{API_VER_PATH_V1}/books', methods=['GET'])
 def get_books():
     no_of_docs_each_page = request.args.get("ps", "")
@@ -26,7 +30,7 @@ def get_books():
 
     if no_of_docs_each_page and current_page_number:
         return make_response(dumps(bookCollection.find({})
-                                .skip(int(no_of_docs_each_page) * (int(current_page_number)-1))
+                                .skip(int(no_of_docs_each_page) * (int(current_page_number)))
                                 .limit(int(no_of_docs_each_page))), 200)
     
     return make_response(dumps(bookCollection.find({})), 200)
@@ -52,7 +56,7 @@ def get_book_by_category():
             return make_response(dumps(books), 200)
         return make_response(dumps(bookCollection.find({"categories": category})))
     
-    return make_response({"Error": "Please provide a valid category"}, 400)
+    return make_response({"Error": "Please provide a valid category"}, 404)
 
 @books_api.route(f'{API_VER_PATH_V1}/books/results', methods=['GET'])
 def get_book_by_text_search():
@@ -94,7 +98,7 @@ def create_new_book():
     data = request.json
 
     if data:
-        if not data.get("title") or not data.get("isbn") or not data.get("thumbnailUrl"):
+        if not data.get("title") or not data.get("isbn") or not data.get("thumbnailUrl") or not data.get("price"):
             return make_response({"Error": "Title, isbn or thumbnail empty"}, 400) 
 
         new_book = {

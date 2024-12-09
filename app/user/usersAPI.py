@@ -1,3 +1,4 @@
+from flask_cors import cross_origin
 from flask import request, make_response, jsonify, Blueprint
 from pymongo import MongoClient
 from bson.json_util import dumps
@@ -38,7 +39,7 @@ def get_all_users():
 
 @users_api.route(f'{API_VER_PATH_V1}/users/<id>', methods=['GET'])
 @verify_token
-def get_user(id):
+def get_user_by_id(id):
     jwt_token = request.headers["x-access-token"]
     data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
 
@@ -48,6 +49,30 @@ def get_user(id):
         return make_response(dumps(user), 200)
     
     return make_response(dumps({"Error": "Unauthorized"}), 401)
+
+@users_api.route(f'{API_VER_PATH_V1}/user', methods=['GET'])
+@verify_token
+def get_user():
+    jwt_token = request.headers["x-access-token"]
+    data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+
+    user = userCollection.find_one({"username": data["user"]})
+
+    if data["user"]: 
+        return make_response(dumps(user), 200)
+    
+    return make_response(dumps({"Error": "Unauthorized"}), 401)
+
+@users_api.route(f'{API_VER_PATH_V1}/users/amount', methods=['GET'])
+@verify_token
+def get_amount_owed():
+    jwt_token = request.headers["x-access-token"]
+    data = jwt.decode(jwt_token, SECRET_KEY, algorithms="HS256")
+    user = userCollection.find_one({"username": data["user"]})
+
+    amount = user["amountOwed"]
+
+    return make_response(jsonify(amount), 200)
 
 @users_api.route(f'{API_VER_PATH_V1}/users/', methods=['POST'])
 def create_new_user():
@@ -64,7 +89,8 @@ def create_new_user():
         "username" : data.get("username"),
         "password" : bytes(data.get("password"), encoding='utf8'),
         "role" : "user",
-        "books" : [],
+        "amountOwed": 0,
+        "books" : []
         }
 
         new_user["password"] = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
@@ -120,7 +146,7 @@ def user_login():
             }
 
             activityCollection.insert_one(activity)
-            return make_response(jsonify({"token": token}), 200)
+            return make_response(jsonify(token), 200)
         
     activity = {
         "Action": "User Login",
@@ -152,8 +178,13 @@ def reserve_book(id):
         if book["reserved"] == False:
             bookCollection.update_one(query, {"$set": {"reserved": True}})
             filter = {"username": jwt_data["user"]}
+            
+            user = userCollection.find_one(filter)
 
-            value = {"$push": {"books": book}}
+            amount_to_add = user["amountOwed"] + book["price"]
+
+            book_value = {"$push": {"books": book}}
+            cost_value = {"$set": {"amountOwed": amount_to_add}}
 
             activity = {
             "Action": "Book Reserved",
@@ -162,7 +193,8 @@ def reserve_book(id):
             }
 
             activityCollection.insert_one(activity)
-            userCollection.update_one(filter, value)
+            userCollection.update_one(filter, book_value)
+            userCollection.update_one(filter, cost_value)
             return make_response(dumps({"Reserved": book}), 201)
         
         return make_response(dumps({"Error": "Book has already been reserved"}), 400)
@@ -180,6 +212,13 @@ def unreserve_book(id):
 
     bookCollection.update_one({"_id": ObjectId(id)}, {"$set": {"reserved": False}})
 
+    book = bookCollection.find_one({"_id": ObjectId(id)})
+    user = userCollection.find_one({"username": user_id["user"]})
+
+    amount_to_add = user["amountOwed"] - book["price"]
+
+    cost_value = {"$set": {"amountOwed": amount_to_add}}
+
     query = {"username": user_id["user"]}
 
     activity = {
@@ -190,4 +229,5 @@ def unreserve_book(id):
 
     activityCollection.insert_one(activity)
     userCollection.update_one(query, delete_query)
+    userCollection.update_one(query, cost_value)
     return make_response(dumps({"Unreserved": deleted_obj}), 200)
