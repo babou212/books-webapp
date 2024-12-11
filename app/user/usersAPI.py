@@ -1,4 +1,3 @@
-from flask_cors import cross_origin
 from flask import request, make_response, jsonify, Blueprint
 from pymongo import MongoClient
 from bson.json_util import dumps
@@ -181,9 +180,23 @@ def reserve_book(id):
             
             user = userCollection.find_one(filter)
 
+            book_to_add = {
+                "_id" : book['_id'],
+                "title" : book['title'],
+                "isbn" : book['isbn'],
+                "pageCount" : book['pageCount'],
+                "publishedDate" : book['publishedDate'],
+                "thumbnailUrl" : book['thumbnailUrl'],
+                "description" : book['description'],
+                "reserved" : True,
+                "price" : book['price'],
+                "authors" : book['authors'],
+                "categories" : book['categories'],
+            }
+
             amount_to_add = user["amountOwed"] + book["price"]
 
-            book_value = {"$push": {"books": book}}
+            book_value = {"$push": {"books": book_to_add}}
             cost_value = {"$set": {"amountOwed": amount_to_add}}
 
             activity = {
@@ -195,7 +208,7 @@ def reserve_book(id):
             activityCollection.insert_one(activity)
             userCollection.update_one(filter, book_value)
             userCollection.update_one(filter, cost_value)
-            return make_response(dumps({"Reserved": book}), 201)
+            return make_response(dumps({"Reserved": book_to_add}), 201)
         
         return make_response(dumps({"Error": "Book has already been reserved"}), 400)
     
